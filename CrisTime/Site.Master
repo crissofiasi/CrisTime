@@ -1,0 +1,378 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.master.cs" Inherits="CrisTime.SiteMaster" %>
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%: Page.Title %> - CrisTime</title>
+
+    <asp:PlaceHolder runat="server">
+        <%: Scripts.Render("~/bundles/modernizr") %>
+    </asp:PlaceHolder>
+    <webopt:BundleReference runat="server" Path="~/Content/css" />
+    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.2.0.min.js"></script>
+    <script>
+        function onPaste(e) {
+            var content;
+            var content_curent;
+            var content_recursiv;
+            var tab = "\t";
+            var nl = "\n"
+
+            //alert((e.originalEvent || e).clipboardData.getData('text/plain'));
+            e.preventDefault();
+
+            if (e.originalEvent.clipboardData) {
+                content = (e.originalEvent || e).clipboardData.getData('text/plain');
+                var idx;
+                idx = $(this).parent().parent().children().index($(this).parent());
+                $(this).trigger("cripaste", [content, idx]);
+            }
+        }
+
+        function onCriPaste(e, txt, idx) {
+            var content;
+            var content_curent;
+            var content_recursiv;
+            var tab = "\t";
+            var nl = "\n"
+
+            //alert((e.originalEvent || e).clipboardData.getData('text/plain'));
+            e.preventDefault();
+
+            content = txt;
+
+            //if (content.length > 0) {
+            if (1 == 1) {
+
+                // $(this).focus();
+                // $(this).select();
+
+                var posr = content.indexOf(nl);
+                var posc = content.indexOf(tab);
+                var w = 0; // 0= all 1= /t 2= /n
+
+                if ((posc >= 0) && (posr > 0)) {
+                    if (posc > posr)
+                    { w = 2 }
+                    else
+                    { w = 1 }
+                }
+                else {
+                    if (posc >= 0)
+                    { w = 1 }
+                    else if (posr >= 0)
+                    { w = 2 }
+                    else
+                    { w = 0 }
+                }
+                if (w == 0) {
+                    content_curent = content;
+                    content_recursiv = "";
+                    document.execCommand('insertText', false, content_curent);
+
+                }
+                else if (w == 1) {
+                    //********** next column
+                    content_curent = content.slice(0, content.indexOf(tab));
+                    content_recursiv = content.slice(content.indexOf(tab) + 1, content.length);
+                    //e.clipboardData.setData("text",content_recursiv);
+                    document.execCommand('insertText', false, content_curent);
+                    if (content_recursiv.length > 0) {
+                        $(this).parent().next().children().first().focus(); // "/t" tab
+                        $(this).parent().next().children().first().select();
+                        $(this).parent().next().children().first().trigger("cripaste", [content_recursiv, idx]);
+                    }
+
+                }
+                else {
+                    //  *********** next row ************
+
+                    content_curent = content.slice(0, content.indexOf(nl));
+                    content_recursiv = content.slice(content.indexOf(nl) + 1, content.length);
+                    //e.clipboardData.setData("text", content_recursiv);
+                    document.execCommand('insertText', false, content_curent);
+                    if (content_recursiv.length > 0) {
+                        $(this).parent().parent().next().children().eq(idx).find('.tt').focus();
+                        $(this).parent().parent().next().children().eq(idx).find('.tt').select();
+                        $(this).parent().parent().next().children().eq(idx).find('.tt').trigger("cripaste", [content_recursiv, idx]);
+                    }
+                }
+                //alert("content="+content);
+                //alert("content_curent ="+ content_curent);
+                //alert("content_recursiv =" + content_recursiv);
+
+            }
+
+        }
+
+        function onChange(e) {
+            $(this).parent().parent().children().last().text('...');
+
+            var tot = 0;
+            $(this).parent().parent().children().find("input").each(function () {
+                var vv = Number($(this).val());
+                if (!isNaN(vv)) {
+                    tot = tot + vv;
+                }
+            });
+
+            $(this).parent().parent().children().last().text(tot.toString());
+
+
+        }
+
+        function onFocus(e) {
+
+
+            $(this).parent().find('.abs').css('visibility', 'visible');
+
+        }
+
+
+        function onBlur(e) {
+
+            $('.abs').css('visibility', 'hidden');
+
+        }
+
+
+        $(document).ready(function () {
+            var f2 = 0
+
+            $('.tt').on('paste', onPaste);
+            $('.tt').on('cripaste', onCriPaste);
+            $('.tt').change(onChange);
+            $('.tt').on('focus', onFocus);
+            $('.tt').on('blur', onBlur);
+            $(".working").change(function () {
+                $('#working').show();
+            });
+            $(".working_btn").click(function () {
+                $('#working').show();
+            });
+
+
+
+            $('.tt').keydown(function (e) {
+
+                //alert(e.keyCode);
+                if ((e.keyCode == 13) || ((e.keyCode == 39) && (f2 == 0))) { // enter sau -->
+                    e.preventDefault();
+                    var inputs = $('.tt:enabled');
+                    inputs.eq(inputs.index($(this)) + 1).focus();
+                    inputs.eq(inputs.index($(this)) + 1).select();
+                }
+
+                if ((e.keyCode == 37) && (f2 == 0)) { // <--
+                    e.preventDefault();
+                    var inputs = $('.tt:enabled');
+                    inputs.eq(inputs.index($(this)) - 1).focus();
+                    inputs.eq(inputs.index($(this)) - 1).select();
+                }
+                if (e.keyCode == 113) //f2
+                {
+                    if (f2 == 0)
+                    { f2 = 1 }
+                    else
+                    { f2 = 0 }
+
+                }
+
+                if (e.keyCode == 27) { // esc
+                    e.preventDefault();
+                    $('.abs').css('visibility', 'hidden');
+                }
+
+                var idx;
+                idx = $(this).parent().parent().children().index($(this).parent());
+
+                if (e.keyCode == 38) {
+                    $(this).parent().parent().prev().children().eq(idx).find('.tt').focus();
+                    $(this).parent().parent().prev().children().eq(idx).find('.tt').select();
+
+                }; //up
+                if (e.keyCode == 40) {
+                    $(this).parent().parent().next().children().eq(idx).find('.tt').focus();
+                    $(this).parent().parent().next().children().eq(idx).find('.tt').select();
+                }
+                //down
+
+
+
+                //return event.keyCode != 13;
+
+            })
+
+
+
+
+        });
+
+
+    </script>
+    <style>
+        rowPontaj {
+            position: relative;
+        }
+
+        #MainContent_GridViewPontaj td{
+            border-width:2px;
+        }
+
+        div.abs {
+            position: absolute;
+            left: 0px; /*460px;*/
+            width: 100%; /*900px;
+            /*height: 300px;*/
+            background: #ffffff;
+            visibility: hidden;
+            padding: 30px;
+        }
+
+        .TableJurnalScanari {
+            border-style: solid;
+            border-width: 1px;
+            margin: 0px;
+            background-color: #ffffdd;
+        }
+
+            .TableJurnalScanari td {
+                border-style: solid;
+                border-color: #cccccc;
+                padding: 10px;
+                border-width: 1px;
+            }
+
+        #working {
+            display: none;
+            /*width: 800px;*/
+            height: 100%;
+            position: fixed;
+            top: 0px;
+            font-size: xx-large;
+            font-weight: bolder;
+            background-color: #000000;
+            color: red;
+            z-index: 5000;
+            align-content: center;
+            text-align: center;
+            width: 100%;
+        }
+
+        td {
+            padding: 0;
+        }
+
+            td input {
+                border-width: 0px;
+                border-style: none;
+            }
+    </style>
+
+
+</head>
+<body>
+    <div id="working">
+        <div style="width: 20px; height: 20px; float: left"></div>
+        <div style="width: 20px; height: 20px; float: right"></div>
+
+        Se incarca datele
+        <br />
+        Va rugam asteptati...  
+        <br /><br /><br /><br />
+        <img alt="" src="<%=ResolveUrl("~/images/ajax-loader.gif") %>" />
+    </div>
+    <form runat="server">
+        <asp:ScriptManager runat="server">
+            <Scripts>
+                <%--To learn more about bundling scripts in ScriptManager see http://go.microsoft.com/fwlink/?LinkID=301884 --%>
+                <%--Framework Scripts--%>
+                <asp:ScriptReference Name="MsAjaxBundle" />
+                <asp:ScriptReference Name="jquery" />
+                <asp:ScriptReference Name="bootstrap" />
+                <asp:ScriptReference Name="respond" />
+                <asp:ScriptReference Name="WebForms.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebForms.js" />
+                <asp:ScriptReference Name="WebUIValidation.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebUIValidation.js" />
+                <asp:ScriptReference Name="MenuStandards.js" Assembly="System.Web" Path="~/Scripts/WebForms/MenuStandards.js" />
+                <asp:ScriptReference Name="GridView.js" Assembly="System.Web" Path="~/Scripts/WebForms/GridView.js" />
+                <asp:ScriptReference Name="DetailsView.js" Assembly="System.Web" Path="~/Scripts/WebForms/DetailsView.js" />
+                <asp:ScriptReference Name="TreeView.js" Assembly="System.Web" Path="~/Scripts/WebForms/TreeView.js" />
+                <asp:ScriptReference Name="WebParts.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebParts.js" />
+                <asp:ScriptReference Name="Focus.js" Assembly="System.Web" Path="~/Scripts/WebForms/Focus.js" />
+                <asp:ScriptReference Name="WebFormsBundle" />
+                <%--Site Scripts--%>
+            </Scripts>
+        </asp:ScriptManager>
+
+        <div class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" runat="server" href="~/">CrisTime</a>
+
+                </div>
+                <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <%--    <li><a runat="server" href="~/">Acasa</a></li>--%>
+                        <% if ((Context.User.Identity.GetUserName().ToString() == "admin") || (Context.User.Identity.GetUserName().ToString() == "cristi"))
+                            {  %>
+                        <li><a runat="server" href="reg/Angajati.aspx" class="working_btn">Angajati</a></li>
+                        <li><a runat="server" href="reg/Intreruperi.aspx" class="working_btn">Intreruperi</a></li>
+                        <li><a runat="server" href="reg/addlog.aspx" class="working_btn">Pontare</a></li>
+                        <li><a runat="server" href="reg/WebForm1.aspx" class="working_btn">corectii pontaj (in lucru)</a></li>
+
+                        <% }%>
+
+                        <% if (Request.IsAuthenticated)
+                            { %>
+                        <li><a runat="server" href="reg/condica.aspx" class="working_btn">Condica</a></li>
+                        <li><a runat="server" href="reg/ATTLOG.aspx" class="working_btn">Log</a></li>
+                        <li><a runat="server" href="reg/pontaj.aspx" class="working_btn">Pontaj</a></li>
+
+                        <% } %>
+
+                        <%-- <li><a runat="server" href="~/About">Despre</a></li>
+                        <li><a runat="server" href="~/Contact">Contact</a></li>--%>
+                    </ul>
+                    <asp:LoginView runat="server" ViewStateMode="Disabled">
+                        <AnonymousTemplate>
+                            <ul class="nav navbar-nav navbar-right">
+                                <li><a runat="server" href="~/Account/Register">Register</a></li>
+                                <li><a runat="server" href="~/Account/Login">Log in</a></li>
+                            </ul>
+                        </AnonymousTemplate>
+                        <LoggedInTemplate>
+                            <ul class="nav navbar-nav navbar-right">
+                                <li><a runat="server" href="~/Account/Manage" title="Manage your account">Hello, <%: Context.User.Identity.GetUserName()  %> !</a></li>
+                                <li>
+                                    <asp:LoginStatus runat="server" LogoutAction="Redirect" LogoutText="Log off" LogoutPageUrl="~/" OnLoggingOut="Unnamed_LoggingOut" />
+                                </li>
+                            </ul>
+                        </LoggedInTemplate>
+                    </asp:LoginView>
+                </div>
+            </div>
+        </div>
+        <div style="position: relative; width: 100%">
+            <div class="container body-content">
+                <asp:ContentPlaceHolder ID="MainContent" runat="server">
+                </asp:ContentPlaceHolder>
+                <hr />
+                <footer>
+                    <p>&copy; <%: DateTime.Now.Year %> - CrisTime</p>
+                </footer>
+            </div>
+        </div>
+    </form>
+
+</body>
+</html>
